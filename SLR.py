@@ -3,9 +3,6 @@ import csv
 import itertools
 import numpy as np
 from pprint import pprint
-import sklearn
-from sklearn.metrics import confusion_matrix
-import seaborn as sb
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from sklearn.metrics.pairwise import cosine_similarity
