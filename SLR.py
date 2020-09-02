@@ -1,3 +1,6 @@
+__author__ = "Akshay Joshi"
+__email__ = "s8akjosh@stud.uni-saarland.de"
+
 import os
 import csv
 import itertools
@@ -5,7 +8,8 @@ import numpy as np
 from pprint import pprint
 import matplotlib.pyplot as plt
 from collections import defaultdict
-from sklearn.decomposition import PCA
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn.decomposition import PCA, FastICA
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.cluster.hierarchy import dendrogram, linkage
 
@@ -13,7 +17,7 @@ class SLR:
     def __init__(self):
         self.file_path = "phoneme_embeddings.tsv"
 
-    # Generate a confusion matrix/heat map of the cosine similariities of phoneme vector pairs
+    # Generate a confusion matrix/heat map of the cosine similariities of phoneme vector pairs.
     def plotHeatMap(self, final_sim_vectors, final_phoneme_labels):
         fig, ax = plt.subplots()
         im = ax.imshow(final_sim_vectors)
@@ -34,7 +38,7 @@ class SLR:
         return phoneme_vectors, phoneme_labels
 
     # Generate a dictionary with keys as the phonemes and their corresponding row vector containing 
-    # cosine similarities against other phoneme vectors as value 
+    # cosine similarities against other phoneme vectors as value.
     def pairwiseSimilarityDictionary(self):
         pfile = open(self.file_path, encoding="utf-8")
         reader = csv.reader(pfile, delimiter='\t')
@@ -52,7 +56,7 @@ class SLR:
                 pairwise_sim_results.append([i, j, res[0]])
 
         #pprint(pairwise_sim_results)
-        print(f"Total number of phoneme pairs: {len(pairwise_sim_results)}")
+        print(f"Total number of phoneme pairs for cosine similarity: {len(pairwise_sim_results)}")
         similarity_dictionary = defaultdict(list)
         for index, value in enumerate(pairwise_sim_results, start = 1):
             similarity_dictionary[value[0]].append(value[2])
@@ -61,11 +65,11 @@ class SLR:
     
 
     # Return a final reshaped 2D numpy array consisting of pairwise cosine similarities of phoneme embeddings 
-    # extracted from cosine similarity dictionary
+    # extracted from cosine similarity dictionary.
     def finalPhonemeSimilaritiesList(self, similarity_dictionary):
         final_phoneme_labels = [key for key, value in similarity_dictionary.items()]
 
-        # Converting the final similarity vector list into numpy array for easier reshaping into a 2D matrix
+        # Converting the final similarity vector list into numpy array for easier reshaping into a 2D matrix.
         final_sim_vectors = [value for key, value in similarity_dictionary.items()]
         final_sim_vectors = np.asarray(final_sim_vectors).reshape(50, 50)
 
@@ -90,12 +94,59 @@ class SLR:
         self.clusterAnalysis(data, labels, 'single')
 
 
-    def prinicipleComponentAnalysis(self, data):
-        pca = PCA(n_components=2)
-        pca.fit(data)
-        print(pca.explained_variance_ratio_)
-        print(pca.singular_values_)
+    def multiplePrinicipleComponentsPlot(self, data):
+        pca = PCA(n_components = 50)
+        pca_data = pca.fit_transform(data)
+        # Generating a plot to visualize the number of Priniciple Components
+        # required to capture majority (90%) of variance.
+        percentage_variance_explained = (pca.explained_variance_) / np.sum(pca.explained_variance_)
+        cumulative_variance_explained = np.cumsum(percentage_variance_explained)
+        plt.figure(figsize = (8,6))
+        plt.title('Percentage of Variance v/s No. of PCs')
+        plt.xlabel('Number of Principle Components')
+        plt.ylabel('Cumulative Explained Variance')
+        plt.plot(cumulative_variance_explained)
+        plt.grid()
+        plt.show()
 
+    # Not normalizing the phoneme vectors to preserve certain phoneme significance, consistency & importance.
+    def prinicipleComponentAnalysis(self, data, labels):
+        # Before proceeding let's visualize the number of Priniciple Components
+        # required to capture majority of the variance.
+        self.multiplePrinicipleComponentsPlot(data)
+        pca = PCA(n_components = 3)
+        pca_data = pca.fit_transform(data)
+        pca_data = np.vstack((pca_data.T, labels)).T
+        print(f"The Explained Variance Ratio by 3 PCs is: {sum(pca.explained_variance_ratio_) * 100} %")
+        print(f"Singular Values of 3 PCs are: {pca.singular_values_}")
+        fig = plt.figure(figsize = (10,8))
+        ax = fig.add_subplot(1,1,1, projection = '3d') 
+        ax.set_xlabel('Principal Component 1')
+        ax.set_ylabel('Principal Component 2')
+        ax.set_zlabel('Principal Component 3')
+        ax.set_title('3 Principle Components', fontsize = 25)
+
+        for i, target in enumerate(pca_data):
+            ax.scatter(float(pca_data[i][0]), float(pca_data[i][1]), float(pca_data[i][2]))
+        ax.grid()
+        plt.show()
+
+    # Implementing Fast Independent Componenet Analysis to handle data without significant correlation
+    def independentComponentAnalysis(self, data):
+        ica = FastICA(n_components = 40, random_state = 0)
+        ica_data = ica.fit_transform(data)
+        plt.figure(figsize = (8,6))
+        plt.title('Variance Explained v/s No. of ICs')
+        plt.xlabel('Number of Independent Components')
+        plt.ylabel('Variance')
+        for sig in ica_data.T:
+            plt.plot(sig)
+        plt.grid()
+        plt.show()
+    
+
+    def tSNE(self):
+        pass
 
     
 if __name__ == "__main__":
@@ -105,5 +156,6 @@ if __name__ == "__main__":
     final_sim_vectors, final_phoneme_labels = task.finalPhonemeSimilaritiesList(similarity_dictionary)
     task.plotHeatMap(final_sim_vectors, final_phoneme_labels)
     task.executeMultipleLinkages(phoneme_vectors, phoneme_labels)
-    task.prinicipleComponentAnalysis(phoneme_vectors)
+    task.prinicipleComponentAnalysis(phoneme_vectors, phoneme_labels)
+    task.independentComponentAnalysis(phoneme_vectors)
     
