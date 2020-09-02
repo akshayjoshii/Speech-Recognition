@@ -5,6 +5,7 @@ import numpy as np
 from pprint import pprint
 import matplotlib.pyplot as plt
 from collections import defaultdict
+from sklearn.decomposition import PCA
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.cluster.hierarchy import dendrogram, linkage
 
@@ -26,6 +27,11 @@ class SLR:
         fig.tight_layout()
         plt.show()
     
+    def parsePhonemeDictionary(self, phoneme_dictionary):
+        phoneme_labels = [key for key, value in phoneme_dictionary.items()]
+        phoneme_vectors = [value for key, value in phoneme_dictionary.items()]
+
+        return phoneme_vectors, phoneme_labels
 
     # Generate a dictionary with keys as the phonemes and their corresponding row vector containing 
     # cosine similarities against other phoneme vectors as value 
@@ -47,13 +53,13 @@ class SLR:
 
         #pprint(pairwise_sim_results)
         print(f"Total number of phoneme pairs: {len(pairwise_sim_results)}")
-
         similarity_dictionary = defaultdict(list)
         for index, value in enumerate(pairwise_sim_results, start = 1):
             similarity_dictionary[value[0]].append(value[2])
         
-        return similarity_dictionary
+        return similarity_dictionary, phoneme_dict
     
+
     # Return a final reshaped 2D numpy array consisting of pairwise cosine similarities of phoneme embeddings 
     # extracted from cosine similarity dictionary
     def finalPhonemeSimilaritiesList(self, similarity_dictionary):
@@ -65,6 +71,7 @@ class SLR:
 
         return final_sim_vectors, final_phoneme_labels
 
+
     def clusterAnalysis(self, data, labels, linkagecriteria):
         plot_labels = [l for l in labels]
         linkage_method = linkage(data, linkagecriteria)
@@ -75,18 +82,28 @@ class SLR:
         dendrogram(linkage_method, orientation = 'top', labels = plot_labels, distance_sort = 'descending') #leaf_rotation = 35.0)
         plt.show()
     
-    def executeMultipleLinkages(self):
-        self.clusterAnalysis(final_sim_vectors, final_phoneme_labels, 'ward')
-        self.clusterAnalysis(final_sim_vectors, final_phoneme_labels, 'complete')
-        self.clusterAnalysis(final_sim_vectors, final_phoneme_labels, 'average')
-        self.clusterAnalysis(final_sim_vectors, final_phoneme_labels, 'single')
+
+    def executeMultipleLinkages(self, data, labels):
+        self.clusterAnalysis(data, labels, 'ward')
+        self.clusterAnalysis(data, labels, 'complete')
+        self.clusterAnalysis(data, labels, 'average')
+        self.clusterAnalysis(data, labels, 'single')
+
+
+    def prinicipleComponentAnalysis(self, data):
+        pca = PCA(n_components=2)
+        pca.fit(data)
+        print(pca.explained_variance_ratio_)
+        print(pca.singular_values_)
+
 
     
-
 if __name__ == "__main__":
     task = SLR()
-    similarity_dictionary = task.pairwiseSimilarityDictionary()
+    similarity_dictionary, phoneme_dictionary = task.pairwiseSimilarityDictionary()
+    phoneme_vectors, phoneme_labels = task.parsePhonemeDictionary(phoneme_dictionary)
     final_sim_vectors, final_phoneme_labels = task.finalPhonemeSimilaritiesList(similarity_dictionary)
     task.plotHeatMap(final_sim_vectors, final_phoneme_labels)
-    task.executeMultipleLinkages()
+    task.executeMultipleLinkages(phoneme_vectors, phoneme_labels)
+    task.prinicipleComponentAnalysis(phoneme_vectors)
     
