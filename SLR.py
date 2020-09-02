@@ -6,6 +6,7 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from sklearn.metrics.pairwise import cosine_similarity
+from scipy.cluster.hierarchy import dendrogram, linkage
 
 class SLR:
     def __init__(self):
@@ -64,8 +65,28 @@ class SLR:
 
         return final_sim_vectors, final_phoneme_labels
 
+    def clusterAnalysis(self, data, labels, linkagecriteria):
+        plot_labels = [l for l in labels]
+        linkage_method = linkage(data, linkagecriteria)
+        plt.figure(figsize = (10, 8))
+        plt.xlabel('Phonemes')
+        plt.ylabel('Euclidean Distance')
+        plt.title(f'{linkagecriteria.upper()} Linkage')
+        dendrogram(linkage_method, orientation = 'top', labels = plot_labels, distance_sort = 'descending') #leaf_rotation = 35.0)
+        plt.show()
+    
+    def executeMultipleLinkages(self):
+        self.clusterAnalysis(final_sim_vectors, final_phoneme_labels, 'ward')
+        self.clusterAnalysis(final_sim_vectors, final_phoneme_labels, 'complete')
+        self.clusterAnalysis(final_sim_vectors, final_phoneme_labels, 'average')
+        self.clusterAnalysis(final_sim_vectors, final_phoneme_labels, 'single')
+
+    
+
 if __name__ == "__main__":
     task = SLR()
     similarity_dictionary = task.pairwiseSimilarityDictionary()
     final_sim_vectors, final_phoneme_labels = task.finalPhonemeSimilaritiesList(similarity_dictionary)
     task.plotHeatMap(final_sim_vectors, final_phoneme_labels)
+    task.executeMultipleLinkages()
+    
