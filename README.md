@@ -13,6 +13,19 @@ In the attachment, you will find a ZIP file which consists of a .tsv file. The .
 4.	Exploring the embeddings space with at least two techniques. We recommend using dimensionality reduction and visualizatio (e.g., PCA, t-SNE), as well as a hierarchical cluster analysis to obtain a dendrogram. 
 5.	Writing a 2-3 page report, including the 2 figures, presenting your solution and summarizing your findings. We expect that you would attempt to answer and discuss the question: What do the embeddings really represent? do similarly sounding phonemes have similar embeddings? 
 
-## Sample Plot
+
+##  Visualizations:
+### Cosine Similarity Heatmap:
 ![Heatmap of pairwise cosine similarity of phoneme vectors](images/heatmap.png?raw=true "Cosine Similarity Heatmap")
+
+### Agglomerative Clustering Dendrograms:
+![ward](images/ward.png?raw=true "Ward Linkage")
+![complete](images/complete.png?raw=true "Complete Linkage")
+![average](images/average.png?raw=true "Average Linkage")
+![single](images/single.png?raw=true "Single Linkage")
+
+
+### Principle Component Analysis:
+#### No. of PCs v/s Cumulative Variance:
+![Cumulative Variance](images/pca_cumulative_variance.png?raw=true "Cumulative Variance")
 
