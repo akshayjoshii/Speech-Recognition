@@ -4,12 +4,18 @@ __email__ = "s8akjosh@stud.uni-saarland.de"
 import csv
 import itertools
 import numpy as np
-import matplotlib.pyplot as plt
 from collections import defaultdict
-from sklearn.manifold import TSNE, MDS
+
+# Confusion Matrix, visualization from Matplotlib
+import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+
+# TSNE, MDS, PCA, Cosine Sim from Scikit-learn
+from sklearn.manifold import TSNE, MDS
 from sklearn.decomposition import PCA, FastICA
 from sklearn.metrics.pairwise import cosine_similarity
+
+# Agglomerative Clustering from Scipy
 from scipy.cluster.hierarchy import dendrogram, linkage
 
 class SLR:
@@ -25,17 +31,17 @@ class SLR:
         ax.set_yticks(np.arange(len(final_phoneme_labels)))
         ax.set_xticklabels(final_phoneme_labels)
         ax.set_yticklabels(final_phoneme_labels)
-        ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)
+        ax.tick_params(top = True, bottom = False, labeltop = True, labelbottom = False)
         cbar = ax.figure.colorbar(im, ax=ax)
         cbar.ax.set_ylabel("Heatmap of Cosine Similarities of Phoneme Vectors", rotation=-90, va="bottom")
         fig.tight_layout()
         plt.show()
     
 
+    # Return list of lists of phoneme vectors
     def parsePhonemeDictionary(self, phoneme_dictionary):
         phoneme_labels = [key for key, value in phoneme_dictionary.items()]
         phoneme_vectors = [value for key, value in phoneme_dictionary.items()]
-
         return phoneme_vectors, phoneme_labels
 
 
@@ -60,9 +66,8 @@ class SLR:
         #print(pairwise_sim_results)
         print(f"Total number of phoneme pairs for cosine similarity: {len(pairwise_sim_results)}")
         similarity_dictionary = defaultdict(list)
-        for index, value in enumerate(pairwise_sim_results, start = 1):
+        for index, value in enumerate(pairwise_sim_results, start=1):
             similarity_dictionary[value[0]].append(value[2])
-        
         return similarity_dictionary, phoneme_dict
     
 
@@ -74,10 +79,10 @@ class SLR:
         # Converting the final similarity vector list into numpy array for easier reshaping into a 2D matrix.
         final_sim_vectors = [value for key, value in similarity_dictionary.items()]
         final_sim_vectors = np.asarray(final_sim_vectors).reshape(50, 50)
-
         return final_sim_vectors, final_phoneme_labels
 
 
+    # Function to perform Agglomerative/Hierarchial Clustering
     def clusterAnalysis(self, data, labels, linkagecriteria):
         plot_labels = [l for l in labels]
         linkage_method = linkage(data, linkagecriteria)
@@ -96,6 +101,7 @@ class SLR:
         self.clusterAnalysis(data, labels, 'single')
 
 
+    # Function to plot all the possible PCs and their respective percentage of variance captured
     def multiplePrinicipleComponentsPlot(self, data):
         pca = PCA(n_components = 50)
         pca_data = pca.fit_transform(data)
@@ -149,6 +155,7 @@ class SLR:
         plt.show()
     
 
+    # Experimenting with t-SNE (Manifold Learning methods) to perform non-linear dimensionality reduction
     def tStochasticNeighborEmbedding(self, data, labels):
         # When n_components = 2, best value for perplexity is found to be 17 (w/ LR: 300) after performing a grid search.
         # When n_components = 3, best value for perplexity if found to be 37.
@@ -169,6 +176,7 @@ class SLR:
             plt.show()
 
 
+    # Implementation of MDS (Metric type) to perform non-linear dimensionality reduction
     def multiDimensionalScaling(self, data, labels):
         mds = MDS(n_components = 3, metric = True, n_init = 4, random_state = 0, verbose = 1)
         mds_data = mds.fit_transform(data)
@@ -186,14 +194,33 @@ class SLR:
 
     
 if __name__ == "__main__":
+    # Create an object of SLR class
     task = SLR()
+
+    # Generate Phoneme vector & Phoneme pairwise cosine similarity dictionaries
     similarity_dictionary, phoneme_dictionary = task.pairwiseSimilarityDictionary()
+
+    # Parse the phoneme dictionary to retrieve a list of lists of all the phoneme vectors
     phoneme_vectors, phoneme_labels = task.parsePhonemeDictionary(phoneme_dictionary)
+
+    # Parse the Phoneme pair cosine similarity dictionary to retrieve a list of lists of all the pairwise cosine sim vectors
     final_sim_vectors, final_phoneme_labels = task.finalPhonemeSimilaritiesList(similarity_dictionary)
+
+    # Plot a Heatmap/Confusion matrix of pairwise cosine similarity values
     task.plotHeatMap(final_sim_vectors, final_phoneme_labels)
+
+    # Perform Agglomerative clustering and plot corresponding dendrograms
     task.executeMultipleLinkages(phoneme_vectors, phoneme_labels)
+
+    # Perform 'Priniciple Component Analysis (PCA) for dimentionality reduction and visualization
     task.prinicipleComponentAnalysis(phoneme_vectors, phoneme_labels)
+
+    # Perform 'Independent Component Analysis (ICA)' for dimentionality reduction and visualization
     task.independentComponentAnalysis(phoneme_vectors)
+
+    # Perform 't-Distributed Stochastic Neighbor Embedding (t-SNE)' for dimentionality reduction and visualization
     task.tStochasticNeighborEmbedding(phoneme_vectors, phoneme_labels)
+
+    # Perform 'Multidimensional Scaling (MDS - Metric)' for dimentionality reduction and visualization
     task.multiDimensionalScaling(phoneme_vectors, phoneme_labels)
     
