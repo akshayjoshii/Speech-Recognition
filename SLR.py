@@ -1,12 +1,11 @@
 __author__ = "Akshay Joshi"
 __email__ = "s8akjosh@stud.uni-saarland.de"
 
-import os
 import csv
 import itertools
 import numpy as np
-from pprint import pprint
 import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
 from collections import defaultdict
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn.decomposition import PCA, FastICA
@@ -55,7 +54,7 @@ class SLR:
                 res = list(itertools.chain.from_iterable(similarity))
                 pairwise_sim_results.append([i, j, res[0]])
 
-        #pprint(pairwise_sim_results)
+        #print(pairwise_sim_results)
         print(f"Total number of phoneme pairs for cosine similarity: {len(pairwise_sim_results)}")
         similarity_dictionary = defaultdict(list)
         for index, value in enumerate(pairwise_sim_results, start = 1):
@@ -109,6 +108,7 @@ class SLR:
         plt.grid()
         plt.show()
 
+
     # Not normalizing the phoneme vectors to preserve certain phoneme significance, consistency & importance.
     def prinicipleComponentAnalysis(self, data, labels):
         # Before proceeding let's visualize the number of Priniciple Components
@@ -121,15 +121,16 @@ class SLR:
         print(f"Singular Values of 3 PCs are: {pca.singular_values_}")
         fig = plt.figure(figsize = (10,8))
         ax = fig.add_subplot(1,1,1, projection = '3d') 
-        ax.set_xlabel('Principal Component 1')
-        ax.set_ylabel('Principal Component 2')
-        ax.set_zlabel('Principal Component 3')
+        ax.set_xlabel('Principle Component 1')
+        ax.set_ylabel('Principle Component 2')
+        ax.set_zlabel('Principle Component 3')
         ax.set_title('3 Principle Components', fontsize = 25)
 
         for i, target in enumerate(pca_data):
             ax.scatter(float(pca_data[i][0]), float(pca_data[i][1]), float(pca_data[i][2]))
         ax.grid()
         plt.show()
+
 
     # Implementing Fast Independent Componenet Analysis to handle data without significant correlation
     def independentComponentAnalysis(self, data):
@@ -145,7 +146,28 @@ class SLR:
         plt.show()
     
 
-    def tSNE(self):
+    def tStochasticNeighborEmbedding(self, data, labels):
+        # When n_components = 2, best value for perplexity is found to be 17 (w/ LR: 300) 
+        # after performing a grid search.
+        # When n_components = 3, best value for perplexity if found to be 37.
+        
+        #for i in range(5, 51):
+            tsne = TSNE(n_components = 2, n_iter = 1000, learning_rate = 300, perplexity = 17, verbose = 1)
+            tsne_data = tsne.fit_transform(data)
+            tsne_data = np.vstack((tsne_data.T, labels)).T
+            fig = plt.figure(figsize = (8,6))
+            ax = fig.add_subplot(1,1,1) #, projection = '3d')
+            ax.set_xlabel('Principal Component 1')
+            ax.set_ylabel('Principal Component 2')
+            #ax.set_zlabel('Principal Component 3')
+            ax.set_title('Two Components', fontsize = 25)
+            for i, target in enumerate(tsne_data):
+                ax.scatter(float(tsne_data[i][0]), float(tsne_data[i][1])) #, float(tsne_data[i][2]))
+            ax.grid()
+            plt.show()
+
+
+    def multiDimensionalScaling(self, data, labels):
         pass
 
     
@@ -158,4 +180,5 @@ if __name__ == "__main__":
     task.executeMultipleLinkages(phoneme_vectors, phoneme_labels)
     task.prinicipleComponentAnalysis(phoneme_vectors, phoneme_labels)
     task.independentComponentAnalysis(phoneme_vectors)
+    task.tStochasticNeighborEmbedding(phoneme_vectors, phoneme_labels)
     
