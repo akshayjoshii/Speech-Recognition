@@ -10,7 +10,8 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-# TSNE, MDS, PCA, Cosine Sim from Scikit-learn
+# TSNE, MDS, PCA, DBSCAN, Cosine Sim from Scikit-learn
+from sklearn.cluster import DBSCAN
 from sklearn.manifold import TSNE, MDS
 from sklearn.decomposition import PCA, FastICA
 from sklearn.metrics.pairwise import cosine_similarity
@@ -21,6 +22,11 @@ from scipy.cluster.hierarchy import dendrogram, linkage
 class SLR:
     def __init__(self):
         self.file_path = "phoneme_embeddings.tsv"
+        self.colours = {} 
+        self.colours[0] = 'r'
+        self.colours[1] = 'g'
+        self.colours[2] = 'b'
+        self.colours[-1] = 'k'
 
 
     # Generate a confusion matrix/heat map of the cosine similariities of phoneme vector pairs.
@@ -33,7 +39,7 @@ class SLR:
         ax.set_yticklabels(final_phoneme_labels)
         ax.tick_params(top = True, bottom = False, labeltop = True, labelbottom = False)
         cbar = ax.figure.colorbar(im, ax=ax)
-        cbar.ax.set_ylabel("Heatmap of Cosine Similarities of Phoneme Vectors", rotation=-90, va="bottom")
+        cbar.ax.set_ylabel("Heatmap of Cosine Similarities of Phoneme Vectors", rotation= -90, va = "bottom")
         fig.tight_layout()
         plt.show()
     
@@ -89,8 +95,8 @@ class SLR:
         plt.figure(figsize = (10, 8))
         plt.xlabel('Phonemes')
         plt.ylabel('Euclidean Distance')
-        plt.title(f'{linkagecriteria.upper()} Linkage')
-        dendrogram(linkage_method, orientation = 'top', labels = plot_labels, distance_sort = 'descending') #leaf_rotation = 35.0)
+        plt.title(f'{linkagecriteria.upper()} Linkage', fontsize = 25)
+        dendrogram(linkage_method, orientation = 'top', labels = plot_labels, distance_sort = 'descending', leaf_rotation = 0.0)
         plt.show()
     
 
@@ -110,7 +116,7 @@ class SLR:
         percentage_variance_explained = (pca.explained_variance_) / np.sum(pca.explained_variance_)
         cumulative_variance_explained = np.cumsum(percentage_variance_explained)
         plt.figure(figsize = (8,6))
-        plt.title('Percentage of Variance v/s No. of PCs')
+        plt.title('Percentage of Variance v/s No. of PCs', fontsize = 25)
         plt.xlabel('Number of Principle Components')
         plt.ylabel('Cumulative Explained Variance')
         plt.plot(cumulative_variance_explained)
@@ -137,6 +143,7 @@ class SLR:
 
         for i, target in enumerate(pca_data):
             ax.scatter(float(pca_data[i][0]), float(pca_data[i][1]), float(pca_data[i][2]))
+        
         ax.grid()
         plt.show()
 
@@ -149,8 +156,10 @@ class SLR:
         plt.title('Variance Explained v/s No. of Independent Components')
         plt.xlabel('Number of Independent Components')
         plt.ylabel('Variance')
+        
         for sig in ica_data.T:
             plt.plot(sig)
+
         plt.grid()
         plt.show()
     
@@ -170,8 +179,10 @@ class SLR:
             ax.set_ylabel('Component 2')
             #ax.set_zlabel('Principal Component 3')
             ax.set_title('t-SNE - Two Components', fontsize = 25)
+            
             for i, target in enumerate(tsne_data):
                 ax.scatter(float(tsne_data[i][0]), float(tsne_data[i][1])) #, float(tsne_data[i][2]))
+
             ax.grid()
             plt.show()
 
@@ -187,12 +198,53 @@ class SLR:
         ax.set_ylabel('Component 2')
         ax.set_zlabel('Component 3')
         ax.set_title('MDS - Two Components', fontsize = 25)
+        
         for i, target in enumerate(mds_data):
             ax.scatter(float(mds_data[i][0]), float(mds_data[i][1]), float(mds_data[i][2]))
+
+        ax.grid()
+        plt.show()
+    
+
+    def performDBSCAN(self, data):
+        # Reducing the dimension of the data from 50 to 2 using PCA
+        pca = PCA(n_components = 2)
+        pca_data = pca.fit_transform(data)
+
+        # Loop to perform a grid search to detect best values of 'eps' and 'min_samples' parameter
+        """for i in range(5, 50):
+            for j in [0.1, 0.2, 0.3, 0.4, 0.5]:"""
+
+        # The best value (to get multiple/unique clusters) for eps is: 0.5 
+        # and min_samples is: 9
+        dbs = DBSCAN(eps = 0.5, min_samples = 9, metric = 'euclidean')
+        dbs_data = dbs.fit(pca_data)
+
+        # print(i, j, dbs_data.labels_)
+        labels = dbs_data.labels_
+        colour_swatch = [self.colours[label] for label in labels] 
+        fig = plt.figure(figsize = (8, 6))
+        ax = fig.add_subplot(1,1,1)
+        ax.set_xlabel('Principle Component 1')
+        ax.set_ylabel('Principle Component 2')
+        ax.set_title('DBSCAN Clustering', fontsize = 25) 
+
+        # Plot the DBSCAN clusters
+        for i, target in enumerate(pca_data): 
+            plt.scatter(pca_data[i][0], pca_data[i][1], color = colour_swatch[i])
+        
+        # Plotting the legend for Clusters
+        r = plt.scatter(pca_data[0], pca_data[1], color = 'r') 
+        g = plt.scatter(pca_data[0], pca_data[1], color = 'g') 
+        b = plt.scatter(pca_data[0], pca_data[1], color = 'b') 
+        k = plt.scatter(pca_data[0], pca_data[1], color = 'k')
+        ax.legend((r, g, b, k), ('Cluster 1', 'Cluster 2', 'Cluster 3', 'Couldnt Cluster'))
         ax.grid()
         plt.show()
 
-    
+
+
+# Driver Code    
 if __name__ == "__main__":
     # Create an object of SLR class
     task = SLR()
@@ -206,21 +258,50 @@ if __name__ == "__main__":
     # Parse the Phoneme pair cosine similarity dictionary to retrieve a list of lists of all the pairwise cosine sim vectors
     final_sim_vectors, final_phoneme_labels = task.finalPhonemeSimilaritiesList(similarity_dictionary)
 
-    # Plot a Heatmap/Confusion matrix of pairwise cosine similarity values
-    task.plotHeatMap(final_sim_vectors, final_phoneme_labels)
+    
+    print("-----------------------------------------------------------------------")
+    print("The available functions are:")
+    print("\n1. Pairwise Cosine Similarity Heatmap/Confusion Matrix")
+    print("\n2. Agglomerative Clustering & Dendrogram Visualization")
+    print("\n3. Priniciple Component Analysis (PCA)")
+    print("\n4. Independent Component Analysis (ICA)")
+    print("\n5. t-Distributed Stochastic Neighbor Embedding (t-SNE)")
+    print("\n6. Multidimensional Scaling (MDS - Metric)")
+    print("\n7. PCA - DBSCAN Clustering")
+    print("\n8. Exit")
+    print("-----------------------------------------------------------------------")
 
-    # Perform Agglomerative clustering and plot corresponding dendrograms
-    task.executeMultipleLinkages(phoneme_vectors, phoneme_labels)
+    while(True):
+        user_input = int(input("Please enter the desired function between 1 - 8:\n"))
 
-    # Perform 'Priniciple Component Analysis (PCA) for dimentionality reduction and visualization
-    task.prinicipleComponentAnalysis(phoneme_vectors, phoneme_labels)
+        if user_input == 1:
+            # Plot a Heatmap/Confusion matrix of pairwise cosine similarity values
+            task.plotHeatMap(final_sim_vectors, final_phoneme_labels)
 
-    # Perform 'Independent Component Analysis (ICA)' for dimentionality reduction and visualization
-    task.independentComponentAnalysis(phoneme_vectors)
+        if user_input == 2:
+            # Perform Agglomerative clustering and plot corresponding dendrograms
+            task.executeMultipleLinkages(phoneme_vectors, phoneme_labels)
 
-    # Perform 't-Distributed Stochastic Neighbor Embedding (t-SNE)' for dimentionality reduction and visualization
-    task.tStochasticNeighborEmbedding(phoneme_vectors, phoneme_labels)
+        if user_input == 3:
+            # Perform 'Priniciple Component Analysis (PCA) for dimentionality reduction and visualization
+            task.prinicipleComponentAnalysis(phoneme_vectors, phoneme_labels)
 
-    # Perform 'Multidimensional Scaling (MDS - Metric)' for dimentionality reduction and visualization
-    task.multiDimensionalScaling(phoneme_vectors, phoneme_labels)
+        if user_input == 4:
+            # Perform 'Independent Component Analysis (ICA)' for dimentionality reduction and visualization
+            task.independentComponentAnalysis(phoneme_vectors)
+
+        if user_input == 5:
+            # Perform 't-Distributed Stochastic Neighbor Embedding (t-SNE)' for dimentionality reduction and visualization
+            task.tStochasticNeighborEmbedding(phoneme_vectors, phoneme_labels)
+
+        if user_input == 6:
+            # Perform 'Multidimensional Scaling (MDS - Metric)' for dimentionality reduction and visualization
+            task.multiDimensionalScaling(phoneme_vectors, phoneme_labels)
+
+        if user_input == 7:
+            # Perform clustering with DBSCAN
+            task.performDBSCAN(phoneme_vectors)
+        
+        if user_input == 8:
+            break
     
