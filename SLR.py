@@ -5,8 +5,8 @@ import csv
 import itertools
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.manifold import TSNE
 from collections import defaultdict
+from sklearn.manifold import TSNE, MDS
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn.decomposition import PCA, FastICA
 from sklearn.metrics.pairwise import cosine_similarity
@@ -15,6 +15,7 @@ from scipy.cluster.hierarchy import dendrogram, linkage
 class SLR:
     def __init__(self):
         self.file_path = "phoneme_embeddings.tsv"
+
 
     # Generate a confusion matrix/heat map of the cosine similariities of phoneme vector pairs.
     def plotHeatMap(self, final_sim_vectors, final_phoneme_labels):
@@ -30,11 +31,13 @@ class SLR:
         fig.tight_layout()
         plt.show()
     
+
     def parsePhonemeDictionary(self, phoneme_dictionary):
         phoneme_labels = [key for key, value in phoneme_dictionary.items()]
         phoneme_vectors = [value for key, value in phoneme_dictionary.items()]
 
         return phoneme_vectors, phoneme_labels
+
 
     # Generate a dictionary with keys as the phonemes and their corresponding row vector containing 
     # cosine similarities against other phoneme vectors as value.
@@ -117,7 +120,7 @@ class SLR:
         pca = PCA(n_components = 3)
         pca_data = pca.fit_transform(data)
         pca_data = np.vstack((pca_data.T, labels)).T
-        print(f"The Explained Variance Ratio by 3 PCs is: {sum(pca.explained_variance_ratio_) * 100} %")
+        print(f"The Explained Variance Ratio by 3 Priniciple Components is: {sum(pca.explained_variance_ratio_) * 100} %")
         print(f"Singular Values of 3 PCs are: {pca.singular_values_}")
         fig = plt.figure(figsize = (10,8))
         ax = fig.add_subplot(1,1,1, projection = '3d') 
@@ -137,7 +140,7 @@ class SLR:
         ica = FastICA(n_components = 40, random_state = 0)
         ica_data = ica.fit_transform(data)
         plt.figure(figsize = (8,6))
-        plt.title('Variance Explained v/s No. of ICs')
+        plt.title('Variance Explained v/s No. of Independent Components')
         plt.xlabel('Number of Independent Components')
         plt.ylabel('Variance')
         for sig in ica_data.T:
@@ -147,8 +150,7 @@ class SLR:
     
 
     def tStochasticNeighborEmbedding(self, data, labels):
-        # When n_components = 2, best value for perplexity is found to be 17 (w/ LR: 300) 
-        # after performing a grid search.
+        # When n_components = 2, best value for perplexity is found to be 17 (w/ LR: 300) after performing a grid search.
         # When n_components = 3, best value for perplexity if found to be 37.
         
         #for i in range(5, 51):
@@ -157,10 +159,10 @@ class SLR:
             tsne_data = np.vstack((tsne_data.T, labels)).T
             fig = plt.figure(figsize = (8,6))
             ax = fig.add_subplot(1,1,1) #, projection = '3d')
-            ax.set_xlabel('Principal Component 1')
-            ax.set_ylabel('Principal Component 2')
+            ax.set_xlabel('Component 1')
+            ax.set_ylabel('Component 2')
             #ax.set_zlabel('Principal Component 3')
-            ax.set_title('Two Components', fontsize = 25)
+            ax.set_title('t-SNE - Two Components', fontsize = 25)
             for i, target in enumerate(tsne_data):
                 ax.scatter(float(tsne_data[i][0]), float(tsne_data[i][1])) #, float(tsne_data[i][2]))
             ax.grid()
@@ -168,7 +170,19 @@ class SLR:
 
 
     def multiDimensionalScaling(self, data, labels):
-        pass
+        mds = MDS(n_components = 3, metric = True, n_init = 4, random_state = 0, verbose = 1)
+        mds_data = mds.fit_transform(data)
+        mds_data = np.vstack((mds_data.T, labels)).T
+        fig = plt.figure(figsize = (8,6))
+        ax = fig.add_subplot(1,1,1, projection = '3d')
+        ax.set_xlabel('Component 1')
+        ax.set_ylabel('Component 2')
+        ax.set_zlabel('Component 3')
+        ax.set_title('MDS - Two Components', fontsize = 25)
+        for i, target in enumerate(mds_data):
+            ax.scatter(float(mds_data[i][0]), float(mds_data[i][1]), float(mds_data[i][2]))
+        ax.grid()
+        plt.show()
 
     
 if __name__ == "__main__":
@@ -181,4 +195,5 @@ if __name__ == "__main__":
     task.prinicipleComponentAnalysis(phoneme_vectors, phoneme_labels)
     task.independentComponentAnalysis(phoneme_vectors)
     task.tStochasticNeighborEmbedding(phoneme_vectors, phoneme_labels)
+    task.multiDimensionalScaling(phoneme_vectors, phoneme_labels)
     
